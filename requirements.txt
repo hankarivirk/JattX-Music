@@ -6,7 +6,7 @@ ntgcalls
 motor
 pymongo
 yt-dlp
-py-yt
+py-yt-search
 aiohttp
 aiofiles
 Pillow>=10.0.0
