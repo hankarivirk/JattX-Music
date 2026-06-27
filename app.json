@@ -1,0 +1,32 @@
+{
+  "name": "JattX Music Bot",
+  "description": "The fastest Telegram music bot — YouTube, Spotify, effects, playlists & more.",
+  "keywords": ["telegram", "music", "bot", "python"],
+  "env": {
+    "API_ID":             { "description": "Telegram API ID from my.telegram.org", "required": true },
+    "API_HASH":           { "description": "Telegram API Hash from my.telegram.org", "required": true },
+    "BOT_TOKEN":          { "description": "Bot token from @BotFather", "required": true },
+    "MONGO_URL":          { "description": "MongoDB connection string", "required": true },
+    "OWNER_ID":           { "description": "Your Telegram user ID", "required": true },
+    "LOGGER_ID":          { "description": "Channel/group ID for bot logs", "required": true },
+    "SESSION":            { "description": "Pyrogram session string for assistant", "required": true },
+    "SESSION2":           { "description": "Optional 2nd assistant session", "required": false },
+    "SESSION3":           { "description": "Optional 3rd assistant session", "required": false },
+    "SUPPORT_CHANNEL":    { "description": "Your updates channel URL", "required": false },
+    "SUPPORT_CHAT":       { "description": "Your support group URL", "required": false },
+    "DURATION_LIMIT":     { "description": "Max track duration in minutes", "value": "90" },
+    "QUEUE_LIMIT":        { "description": "Max tracks in queue", "value": "30" },
+    "THUMB_GEN":          { "description": "Generate Now Playing cards (True/False)", "value": "True" },
+    "VIDEO_PLAY":         { "description": "Allow video streaming (True/False)", "value": "True" },
+    "AUTO_END":           { "description": "Stop VC when queue empty (True/False)", "value": "True" },
+    "COOKIES_URL":        { "description": "Space-separated batbin.me cookie URLs", "required": false },
+    "YT_PO_TOKEN":        { "description": "YouTube PO token for bot-detection bypass", "required": false },
+    "YT_VISITOR_DATA":    { "description": "YouTube visitor data paired with PO token", "required": false },
+    "SPOTIFY_CLIENT_ID":  { "description": "Spotify API client ID", "required": false },
+    "SPOTIFY_CLIENT_SECRET": { "description": "Spotify API client secret", "required": false },
+    "LANG_CODE":          { "description": "Default language code (en/hi/pa/ar…)", "value": "en" }
+  },
+  "buildpacks": [
+    { "url": "heroku/python" }
+  ]
+}

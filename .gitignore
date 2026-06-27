@@ -1,0 +1,11 @@
+.env
+*.session
+*.session-journal
+downloads/
+cache/
+jattx/cookies/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+.DS_Store
