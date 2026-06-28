@@ -39,11 +39,6 @@ from jattx.core.userbot  import Userbot
 from jattx.core.mongo    import MongoDB
 from jattx.core.youtube  import YouTube
 from jattx.core.telegram import Telegram
-thumb   = Thumbnail()
-
-from jattx.core.calls import JattXCall
-call    = JattXCall()
-
 from jattx.helpers       import Queue, Thumbnail
 
 ensure_dirs()
@@ -56,8 +51,12 @@ tg      = Telegram()
 queue   = Queue()
 thumb   = Thumbnail()
 
+# JattXCall is imported only after app/db/queue/thumb/userbot exist above,
+# since jattx.core.calls does `from jattx import app, db, queue, thumb, userbot`
+# at module level — importing it earlier caused a circular-import crash.
 from jattx.core.calls import JattXCall
 call    = JattXCall()
+
 
 async def stop() -> None:
     logger.info("Shutting down JattX Music…")
