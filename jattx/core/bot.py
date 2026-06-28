@@ -18,7 +18,6 @@ class Bot(Client):
         )
 
     async def start(self):
-        # Handle FloodWait gracefully
         while True:
             try:
                 await super().start()
@@ -27,8 +26,7 @@ class Bot(Client):
                 wait = e.value
                 from jattx import logger
                 logger.warning(
-                    f"⚠️ FloodWait: Waiting {wait} seconds "
-                    f"before connecting..."
+                    f"⚠️ FloodWait: Waiting {wait}s..."
                 )
                 await asyncio.sleep(wait + 5)
 
