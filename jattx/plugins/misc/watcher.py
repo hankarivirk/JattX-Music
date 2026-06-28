@@ -2,8 +2,7 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message
 
-from jattx import app, call, config, db, queue, userbot
-from jattx import logger
+from jattx import app, call, config, db, logger, queue, userbot
 
 
 def register_handlers():
@@ -35,7 +34,10 @@ def register_handlers():
                 "KickedFromGroupCall",
             ):
                 queue.clear(chat_id)
-                await db.remove_call(chat_id)
+                try:
+                    await db.remove_call(chat_id)
+                except Exception:
+                    pass
 
 
 @app.on_message(filters.new_chat_members)
@@ -43,16 +45,19 @@ async def new_member(client: Client, message: Message):
     me = await client.get_me()
     for member in message.new_chat_members:
         if member.id == me.id:
-            if await db.is_blacklisted(message.chat.id):
-                await message.reply_text(
-                    "❌ This group is blacklisted. Leaving."
+            try:
+                if await db.is_blacklisted(message.chat.id):
+                    await message.reply_text(
+                        "❌ This group is blacklisted."
+                    )
+                    await client.leave_chat(message.chat.id)
+                    return
+                await db.set_group(
+                    message.chat.id,
+                    title=message.chat.title or ""
                 )
-                await client.leave_chat(message.chat.id)
-                return
-            await db.set_group(
-                message.chat.id,
-                title=message.chat.title or ""
-            )
+            except Exception:
+                pass
             await message.reply_text(
                 f"👋 Hey! I'm {config.BOT_NAME} "
                 f"(@{config.BOT_USERNAME}).\n"
