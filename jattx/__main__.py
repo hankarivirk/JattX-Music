@@ -1,21 +1,17 @@
 """jattx/__main__.py"""
 import asyncio
-import time
 import sys
-
-boot_time = time.time()
-
 
 async def main():
     from jattx import app, userbot, logger
     from jattx.plugins.misc.watcher import register_handlers
+    from pyrogram.errors import FloodWait
 
     logger.info("=" * 52)
     logger.info("  ⚡  JattX Music Bot  |  Starting up…")
     logger.info("=" * 52)
 
-    # Start Bot with FloodWait handling
-    from pyrogram.errors import FloodWait
+    # Start Bot
     while True:
         try:
             await app.start()
@@ -23,7 +19,7 @@ async def main():
         except FloodWait as e:
             wait = e.value
             logger.warning(
-                f"⚠️ FloodWait: waiting {wait} seconds..."
+                f"⚠️ FloodWait: waiting {wait}s..."
             )
             await asyncio.sleep(wait + 5)
         except Exception as e:
@@ -33,12 +29,12 @@ async def main():
     # Start Assistants
     await userbot.start()
 
-    # Register stream handlers
+    # Register handlers
     register_handlers()
 
     logger.info("✅ JattX Music Bot is LIVE!")
 
-    # Keep running
+    # Keep alive
     await asyncio.Event().wait()
 
 
