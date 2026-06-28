@@ -7,7 +7,7 @@ autoplay (auto-fetch related tracks when queue empties).
 
 import asyncio
 from ntgcalls import ConnectionNotFound, TelegramServerError
-from pyrogram.errors import ChatSendMediaForbidden, ChatSendPhotosForbidden, MessageIdInvalid
+from pyrogram.errors import ChatSendMediaForbidden, MessageIdInvalid
 from pyrogram.types import InputMediaPhoto, Message
 from pytgcalls import PyTgCalls, exceptions, types
 
@@ -207,7 +207,7 @@ class JattXCall:
             else:
                 # Fallback: text-only NP card
                 await message.reply_text(caption, reply_markup=buttons)
-        except (ChatSendMediaForbidden, ChatSendPhotosForbidden, MessageIdInvalid):
+        except (ChatSendMediaForbidden, MessageIdInvalid):
             try:
                 await message.reply_text(caption, reply_markup=buttons)
             except Exception:
