@@ -39,7 +39,11 @@ from jattx.core.userbot  import Userbot
 from jattx.core.mongo    import MongoDB
 from jattx.core.youtube  import YouTube
 from jattx.core.telegram import Telegram
-from jattx.core.calls    import JattXCall
+thumb   = Thumbnail()
+
+from jattx.core.calls import JattXCall
+call    = JattXCall()
+
 from jattx.helpers       import Queue, Thumbnail
 
 ensure_dirs()
