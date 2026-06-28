@@ -2,24 +2,20 @@
 import asyncio
 import time
 import sys
-from pyrogram.errors import FloodWait
 
 boot_time = time.time()
 
 
 async def main():
     from jattx import app, userbot, logger
-    from jattx.core.mongo import init_db
     from jattx.plugins.misc.watcher import register_handlers
 
     logger.info("=" * 52)
     logger.info("  ⚡  JattX Music Bot  |  Starting up…")
     logger.info("=" * 52)
 
-    # Connect MongoDB
-    await init_db()
-
     # Start Bot with FloodWait handling
+    from pyrogram.errors import FloodWait
     while True:
         try:
             await app.start()
@@ -27,8 +23,7 @@ async def main():
         except FloodWait as e:
             wait = e.value
             logger.warning(
-                f"⚠️ FloodWait on bot start: "
-                f"waiting {wait} seconds..."
+                f"⚠️ FloodWait: waiting {wait} seconds..."
             )
             await asyncio.sleep(wait + 5)
         except Exception as e:
