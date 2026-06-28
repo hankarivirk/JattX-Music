@@ -2,43 +2,49 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from pytgcalls.types import Update
-from pytgcalls import filters as ptg_filters
+from pytgcalls.types.stream import StreamAudioEnded
+from pytgcalls.types.call_holder import CallHolderNotFound
 
 from jattx import app, call, config, db, queue, userbot
 from jattx import logger
 
 
 def register_handlers():
-    """Wire up pytgcalls callbacks after assistants start."""
+    """Wire up pytgcalls v2.x callbacks."""
     for a in userbot.assistants:
 
-        @a.pytgcalls.on_stream_end()
-        async def on_end(client, update: Update):
+        @a.pytgcalls.on_update()
+        async def handle_update(client, update: Update):
             try:
                 chat_id = update.chat_id
-                logger.info(f"Stream ended in {chat_id}")
+            except AttributeError:
+                return
+
+            update_type = type(update).__name__
+
+            # Stream ended — play next
+            if update_type in (
+                "StreamAudioEnded",
+                "StreamVideoEnded",
+                "StreamDeleted",
+                "MutedStream",
+            ):
+                logger.info(
+                    f"Stream ended ({update_type}) in {chat_id}"
+                )
                 await call.play_next(chat_id)
-            except Exception as e:
-                logger.error(f"on_end error: {e}")
 
-        @a.pytgcalls.on_closed_voice_chat()
-        async def on_closed(client, update: Update):
-            try:
-                chat_id = update.chat_id
+            # VC closed or kicked
+            elif update_type in (
+                "ClosedVoiceChat",
+                "KickedFromGroupCall",
+                "LeftGroupCallParticipant",
+            ):
                 queue.clear(chat_id)
                 await db.remove_call(chat_id)
-                logger.info(f"VC closed in {chat_id}")
-            except Exception as e:
-                logger.error(f"on_closed error: {e}")
-
-        @a.pytgcalls.on_kicked()
-        async def on_kicked(client, update: Update):
-            try:
-                chat_id = update.chat_id
-                queue.clear(chat_id)
-                await db.remove_call(chat_id)
-            except Exception as e:
-                logger.error(f"on_kicked error: {e}")
+                logger.info(
+                    f"VC closed ({update_type}) in {chat_id}"
+                )
 
 
 # ── Bot added to group ─────────────────────────────────────
