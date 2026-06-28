@@ -48,6 +48,17 @@ class Bot(Client):
             f"╚══════════════════════════════════╝"
         )
 
+        # Send startup message to logger
+        try:
+            await self.send_message(
+                config.LOGGER_ID,
+                f"✅ **{config.BOT_NAME} is LIVE!**\n"
+                f"🤖 @{config.BOT_USERNAME}\n"
+                f"🆔 `{config.BOT_ID}`"
+            )
+        except Exception as e:
+            logger.warning(f"Logger msg failed: {e}")
+
     async def exit(self):
         try:
             await self.stop()
