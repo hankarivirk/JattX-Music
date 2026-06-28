@@ -62,3 +62,23 @@ class config:
     # Heroku
     HEROKU_APP_NAME = getenv("HEROKU_APP_NAME", None)
     HEROKU_API_KEY = getenv("HEROKU_API_KEY", None)
+
+    @classmethod
+    def check(cls):
+        required = {
+            "API_ID": cls.API_ID,
+            "API_HASH": cls.API_HASH,
+            "BOT_TOKEN": cls.BOT_TOKEN,
+            "MONGO_DB_URI": cls.MONGO_DB_URI,
+            "OWNER_ID": cls.OWNER_ID,
+            "STRING_SESSION": cls.STRING1,
+        }
+        missing = []
+        for key, value in required.items():
+            if not value:
+                missing.append(key)
+        if missing:
+            print(f"❌ Missing Variables: {', '.join(missing)}")
+            print("Please add them in Railway Variables!")
+            exit(1)
+        print("✅ All required variables are set!")
