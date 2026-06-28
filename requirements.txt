@@ -1,14 +1,19 @@
-# JattX Music Bot — Python 3.11+
 pyrogram==2.0.106
-TgCrypto
-py-tgcalls
+tgcrypto
+pytgcalls==0.9.10
+yt-dlp>=2024.03.10
 motor
 pymongo
-yt-dlp
-py-yt-search
+pyyaml
+requests
 aiohttp
 aiofiles
-Pillow>=10.0.0
-numpy
-python-dotenv
+apscheduler
+beautifulsoup4
+ffmpeg-python
 speedtest-cli
+psutil
+python-dotenv
+pillow
+mutagen
+wget
