@@ -1,14 +1,16 @@
 """
 jattx/plugins/bot/inline.py
-Inline query handler — search YouTube from any chat via @BotUsername query.
-Returns up to 5 results as articles with a Play button.
+Inline query handler — Fixed to use yt-dlp instead of py_yt.
 """
 
 import asyncio
 from pyrogram import Client
 from pyrogram.types import (
-    InlineQuery, InlineQueryResultArticle,
-    InputTextMessageContent, InlineKeyboardMarkup, InlineKeyboardButton
+    InlineQuery,
+    InlineQueryResultArticle,
+    InputTextMessageContent,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
 )
 
 from jattx import app, yt
@@ -27,23 +29,47 @@ async def inline_query(client: Client, query: InlineQuery):
         )
         return
 
-    # Quick search — up to 5 results
     results = []
     try:
-        from py_yt import VideosSearch
-        search = VideosSearch(q, limit=5, with_live=False)
-        data   = await search.next()
-        items  = (data or {}).get("result", [])
+        import yt_dlp
+        opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "extract_flat": True,
+            "skip_download": True,
+            "noplaylist": True,
+            "nocheckcertificate": True,
+        }
+        cookie = yt.get_cookie()
+        if cookie:
+            opts["cookiefile"] = cookie
+
+        def _search():
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                try:
+                    info = ydl.extract_info(
+                        f"ytsearch5:{q}", download=False
+                    )
+                    return (info or {}).get("entries", [])
+                except Exception:
+                    return []
+
+        items = await asyncio.to_thread(_search)
     except Exception:
         items = []
 
     for item in items[:5]:
+        if not item:
+            continue
         vid_id   = item.get("id", "")
         title    = (item.get("title") or "Unknown")[:60]
-        duration = item.get("duration") or "?"
-        channel  = (item.get("channel") or {}).get("name", "")
-        thumb    = ((item.get("thumbnails") or [{}])[-1].get("url") or "").split("?")[0]
-        url      = item.get("link") or f"https://youtube.com/watch?v={vid_id}"
+        duration = item.get("duration_string") or "?"
+        channel  = item.get("uploader") or item.get("channel") or ""
+        thumb    = item.get("thumbnail") or config.DEFAULT_THUMB
+        url      = (
+            item.get("url")
+            or f"https://youtube.com/watch?v={vid_id}"
+        )
 
         results.append(
             InlineQueryResultArticle(
@@ -57,15 +83,19 @@ async def inline_query(client: Client, query: InlineQuery):
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton(
                         "▶️ Play in Group",
-                        switch_inline_query_current_chat=f"/play {url}"
+                        switch_inline_query_current_chat=(
+                            f"/play {url}"
+                        )
                     ),
                     InlineKeyboardButton(
                         "🎬 Video",
-                        switch_inline_query_current_chat=f"/vplay {url}"
+                        switch_inline_query_current_chat=(
+                            f"/vplay {url}"
+                        )
                     ),
                 ]]),
                 description=f"🎤 {channel}  ⏱ {duration}",
-                thumb_url=thumb or config.DEFAULT_THUMB,
+                thumb_url=thumb,
             )
         )
 
