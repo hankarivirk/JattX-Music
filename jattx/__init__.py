@@ -55,8 +55,9 @@ yt      = YouTube()
 tg      = Telegram()
 queue   = Queue()
 thumb   = Thumbnail()
-call    = JattXCall()
 
+from jattx.core.calls import JattXCall
+call    = JattXCall()
 
 async def stop() -> None:
     logger.info("Shutting down JattX Music…")
