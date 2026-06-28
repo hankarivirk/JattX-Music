@@ -1,9 +1,7 @@
-"""
-jattx/core/bot.py
-Pyrogram Bot client with AUTO NAME + USERNAME detection.
-"""
-
+"""jattx/core/bot.py"""
+import asyncio
 from pyrogram import Client
+from pyrogram.errors import FloodWait
 from config import config
 
 
@@ -20,16 +18,27 @@ class Bot(Client):
         )
 
     async def start(self):
-        await super().start()
+        # Handle FloodWait gracefully
+        while True:
+            try:
+                await super().start()
+                break
+            except FloodWait as e:
+                wait = e.value
+                from jattx import logger
+                logger.warning(
+                    f"⚠️ FloodWait: Waiting {wait} seconds "
+                    f"before connecting..."
+                )
+                await asyncio.sleep(wait + 5)
+
         me = await self.get_me()
 
-        # ── Auto-detect and inject into config ────────────────
         config.BOT_ID       = me.id
         config.BOT_NAME     = me.first_name or "JattX Music"
         config.BOT_USERNAME = me.username or "JattXMusicBot"
         config.BOT_MENTION  = f"@{config.BOT_USERNAME}"
 
-        # ── Resolve support links now that we know the username ─
         config.resolve_support_links()
 
         from jattx import logger
