@@ -1,16 +1,13 @@
-"""jattx/core/calls.py — Fixed for py-tgcalls v2.0.0"""
+"""jattx/core/calls.py — Fixed for your exact __init__.py"""
 import asyncio
 from pyrogram.errors import ChatSendMediaForbidden, MessageIdInvalid
 from pyrogram.types import Message
-from pytgcalls import PyTgCalls
 from pytgcalls.types import MediaStream
 from pytgcalls.types.stream import AudioQuality, VideoQuality
 
-from jattx import app, config, db, logger, queue, thumb, userbot
 from jattx.helpers._dataclass import Track, Media
 from jattx.helpers._buttons import now_playing_buttons
 
-# ── Audio effect FFmpeg filter chains ──────────────────────
 EFFECT_FILTERS: dict[str, str] = {
     "bassboost": "bass=g=20,dynaudnorm=f=200",
     "nightcore": "atempo=1.25,asetrate=44100*1.25",
@@ -26,9 +23,16 @@ EFFECT_FILTERS: dict[str, str] = {
 class JattXCall:
     def __init__(self):
         self._effect: dict[int, str] = {}
+        self._active: dict[int, int] = {}
 
-    async def _client(self, chat_id: int):
-        return await db.get_assistant(chat_id)
+    def _get_assistant(self, chat_id: int):
+        """Get assistant using round robin."""
+        from jattx import userbot
+        idx = self._active.get(chat_id, 0)
+        if not userbot.assistants:
+            raise RuntimeError("No assistants available!")
+        idx = idx % len(userbot.assistants)
+        return userbot.assistants[idx]
 
     def _mk_stream(
         self,
@@ -36,10 +40,10 @@ class JattXCall:
         seek: int = 0,
         effect: str = "",
     ) -> MediaStream:
-        filt   = EFFECT_FILTERS.get(effect, "")
-        ff_pre = f"-ss {seek}" if seek > 1 else ""
+        filt    = EFFECT_FILTERS.get(effect, "")
+        ff_pre  = f"-ss {seek}" if seek > 1 else ""
         ff_post = f'-af "{filt}"' if filt else ""
-        ffmpeg = " ".join(filter(None, [ff_pre, ff_post])) or None
+        ffmpeg  = " ".join(filter(None, [ff_pre, ff_post])) or None
 
         return MediaStream(
             media_path=media.file_path,
@@ -51,74 +55,86 @@ class JattXCall:
     # ── Playback controls ──────────────────────────────────
     async def pause(self, chat_id: int) -> bool:
         try:
-            client = await self._client(chat_id)
-            await client.pytgcalls.pause(chat_id)
-            await db.playing(chat_id, paused=True)
+            assistant = self._get_assistant(chat_id)
+            await assistant.pytgcalls.pause(chat_id)
             return True
         except Exception as e:
+            from jattx import logger
             logger.error(f"Pause error [{chat_id}]: {e}")
             return False
 
     async def resume(self, chat_id: int) -> bool:
         try:
-            client = await self._client(chat_id)
-            await client.pytgcalls.resume(chat_id)
-            await db.playing(chat_id, paused=False)
+            assistant = self._get_assistant(chat_id)
+            await assistant.pytgcalls.resume(chat_id)
             return True
         except Exception as e:
+            from jattx import logger
             logger.error(f"Resume error [{chat_id}]: {e}")
             return False
 
     async def stop(self, chat_id: int):
+        from jattx import db, queue
         try:
-            client = await self._client(chat_id)
-            await client.pytgcalls.leave_call(chat_id)
+            assistant = self._get_assistant(chat_id)
+            await assistant.pytgcalls.leave_call(chat_id)
         except Exception:
             pass
         queue.clear(chat_id)
-        await db.remove_call(chat_id)
-        await db.set_loop(chat_id, 0)
         self._effect.pop(chat_id, None)
+        self._active.pop(chat_id, None)
+        try:
+            await db.remove_call(chat_id)
+            await db.set_loop(chat_id, 0)
+        except Exception:
+            pass
 
     async def mute(self, chat_id: int):
         try:
-            client = await self._client(chat_id)
-            await client.pytgcalls.mute(chat_id)
+            assistant = self._get_assistant(chat_id)
+            await assistant.pytgcalls.mute(chat_id)
         except Exception:
             pass
 
     async def unmute(self, chat_id: int):
         try:
-            client = await self._client(chat_id)
-            await client.pytgcalls.unmute(chat_id)
+            assistant = self._get_assistant(chat_id)
+            await assistant.pytgcalls.unmute(chat_id)
         except Exception:
             pass
 
     async def seek(self, chat_id: int, seek_time: int):
+        from jattx import queue
         track = queue.current(chat_id)
         if not track:
             return
         try:
-            client = await self._client(chat_id)
+            assistant = self._get_assistant(chat_id)
             stream = self._mk_stream(
                 track,
                 seek=seek_time,
                 effect=self._effect.get(chat_id, "")
             )
-            await client.pytgcalls.change_stream(chat_id, stream)
+            await assistant.pytgcalls.change_stream(
+                chat_id, stream
+            )
         except Exception as e:
+            from jattx import logger
             logger.error(f"Seek error [{chat_id}]: {e}")
 
-    async def set_effect(self, chat_id: int, effect: str) -> bool:
+    async def set_effect(
+        self, chat_id: int, effect: str
+    ) -> bool:
+        from jattx import queue
         if effect not in EFFECT_FILTERS:
             return False
         self._effect[chat_id] = effect
         track = queue.current(chat_id)
         if track:
             try:
-                client = await self._client(chat_id)
+                assistant = self._get_assistant(chat_id)
                 stream = self._mk_stream(track, effect=effect)
-                await client.pytgcalls.change_stream(
+                await assistant.pytgcalls.change_stream(
                     chat_id, stream
                 )
             except Exception:
@@ -133,6 +149,8 @@ class JattXCall:
         media: "Track | Media",
         seek_time: int = 0,
     ):
+        from jattx import config, logger, queue, thumb, userbot
+
         if not getattr(media, "file_path", None):
             await message.reply_text(
                 f"❌ Failed to get file.\n"
@@ -140,8 +158,12 @@ class JattXCall:
             )
             return await self.play_next(chat_id)
 
-        # Get assistant using round robin
+        # Get assistant round robin
         assistant = userbot.get_client(chat_id)
+        self._active[chat_id] = (
+            userbot.assistants.index(assistant)
+        )
+
         effect = self._effect.get(chat_id, "")
         stream = self._mk_stream(
             media, seek=seek_time, effect=effect
@@ -154,7 +176,7 @@ class JattXCall:
                 generated = await thumb.generate(media)
                 _thumb_url = generated
             except Exception:
-                _thumb_url = None
+                pass
 
         if (
             not _thumb_url
@@ -163,7 +185,7 @@ class JattXCall:
         ):
             _thumb_url = media.thumbnail
 
-        # Join or play
+        # Join or change stream
         try:
             await assistant.pytgcalls.join_group_call(
                 chat_id, stream
@@ -178,11 +200,6 @@ class JattXCall:
                     f"Play failed [{chat_id}]: {e}"
                 )
                 return
-
-        await db.set_active(
-            chat_id,
-            userbot.assistants.index(assistant)
-        )
 
         # Build caption
         title     = getattr(media, "title", "Unknown")
@@ -203,6 +220,7 @@ class JattXCall:
         )
         buttons = now_playing_buttons(chat_id, autoplay=ap_on)
 
+        # Send now playing card
         try:
             if _thumb_url:
                 await message.reply_photo(
@@ -212,7 +230,8 @@ class JattXCall:
                 )
             else:
                 await message.reply_text(
-                    caption, reply_markup=buttons
+                    caption,
+                    reply_markup=buttons
                 )
         except (ChatSendMediaForbidden, MessageIdInvalid):
             try:
@@ -224,19 +243,25 @@ class JattXCall:
 
     # ── Play next ──────────────────────────────────────────
     async def play_next(self, chat_id: int):
-        loop = await db.get_loop(chat_id)
-        if loop > 0:
-            track = queue.current(chat_id)
-            if track:
-                await db.set_loop(chat_id, loop - 1)
-                from jattx import yt
-                track.file_path = await yt.download(
-                    track.id, video=track.video
-                )
-                return
+        from jattx import app, config, db, logger, queue, yt
+
+        # Loop handling
+        try:
+            loop = await db.get_loop(chat_id)
+            if loop > 0:
+                track = queue.current(chat_id)
+                if track:
+                    await db.set_loop(chat_id, loop - 1)
+                    track.file_path = await yt.download(
+                        track.id, video=track.video
+                    )
+                    return
+        except Exception:
+            pass
 
         nxt = queue.pop(chat_id)
 
+        # Autoplay refill
         if not nxt and config.is_autoplay(chat_id):
             nxt = await self._autoplay_refill(chat_id)
 
@@ -245,7 +270,6 @@ class JattXCall:
                 await self.stop(chat_id)
             return
 
-        from jattx import yt
         nxt.file_path = await yt.download(
             nxt.id, video=nxt.video
         )
@@ -267,7 +291,7 @@ class JattXCall:
     async def _autoplay_refill(
         self, chat_id: int
     ) -> "Track | None":
-        from jattx import yt
+        from jattx import config, logger, queue, yt
 
         last = queue.current(chat_id)
         if not last or not getattr(last, "id", None):
@@ -302,7 +326,7 @@ class JattXCall:
 
     # ── Suggestions ────────────────────────────────────────
     async def get_suggestions(self, chat_id: int) -> list:
-        from jattx import yt
+        from jattx import queue, yt
 
         current = queue.current(chat_id)
         if not current or not getattr(current, "id", None):
