@@ -1,7 +1,7 @@
 pyrogram==2.0.106
 TgCrypto
-py-tgcalls==2.3.3
-ntgcalls
+py-tgcalls==2.0.0
+ntgcalls==1.2.1
 motor
 pymongo
 yt-dlp>=2024.12.10
