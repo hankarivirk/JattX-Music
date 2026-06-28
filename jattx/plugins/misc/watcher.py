@@ -1,39 +1,47 @@
-"""jattx/plugins/misc/watcher.py — Stream end & group events."""
+"""jattx/plugins/misc/watcher.py"""
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from pytgcalls.types import Update
+from pytgcalls import filters as ptg_filters
 
 from jattx import app, call, config, db, queue, userbot
 from jattx import logger
 
 
 def register_handlers():
-    """Called after assistants are ready to wire up pytgcalls callbacks."""
+    """Wire up pytgcalls callbacks after assistants start."""
     for a in userbot.assistants:
 
-        # ── Fixed: on_stream_end → on_update ──────────────────────────
-        @a.pytgcalls.on_update()
-        async def on_update(_, update: Update):
+        @a.pytgcalls.on_stream_end()
+        async def on_end(client, update: Update):
             try:
                 chat_id = update.chat_id
-            except AttributeError:
-                return
+                logger.info(f"Stream ended in {chat_id}")
+                await call.play_next(chat_id)
+            except Exception as e:
+                logger.error(f"on_end error: {e}")
 
-            # Stream ended
-            if hasattr(update, 'status'):
-                status = str(update.status).lower()
+        @a.pytgcalls.on_closed_voice_chat()
+        async def on_closed(client, update: Update):
+            try:
+                chat_id = update.chat_id
+                queue.clear(chat_id)
+                await db.remove_call(chat_id)
+                logger.info(f"VC closed in {chat_id}")
+            except Exception as e:
+                logger.error(f"on_closed error: {e}")
 
-                if 'ended' in status or 'finished' in status:
-                    logger.info(f"Stream ended in {chat_id}")
-                    await call.play_next(chat_id)
+        @a.pytgcalls.on_kicked()
+        async def on_kicked(client, update: Update):
+            try:
+                chat_id = update.chat_id
+                queue.clear(chat_id)
+                await db.remove_call(chat_id)
+            except Exception as e:
+                logger.error(f"on_kicked error: {e}")
 
-                elif 'closed' in status or 'kicked' in status:
-                    queue.clear(chat_id)
-                    await db.remove_call(chat_id)
-                    logger.info(f"VC closed/kicked in {chat_id}")
 
-
-# ── Bot added to group ─────────────────────────────────────────────────────
+# ── Bot added to group ─────────────────────────────────────
 @app.on_message(filters.new_chat_members)
 async def new_member(client: Client, message: Message):
     me = await client.get_me()
