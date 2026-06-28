@@ -1,91 +1,64 @@
-import re
 from os import getenv
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# ========================
-# Bot Configuration
-# ========================
-API_ID = int(getenv("API_ID", 0))
-API_HASH = getenv("API_HASH", None)
-BOT_TOKEN = getenv("BOT_TOKEN", None)
 
-# ========================
-# Owner & Logger
-# ========================
-OWNER_ID = int(getenv("OWNER_ID", 0))
-LOGGER_ID = int(getenv("LOGGER_ID", 0))
+class config:
+    # Bot Configuration
+    API_ID = int(getenv("API_ID", 0))
+    API_HASH = getenv("API_HASH", None)
+    BOT_TOKEN = getenv("BOT_TOKEN", None)
 
-# ========================
-# MongoDB
-# ========================
-MONGO_DB_URI = getenv("MONGO_DB_URI", None)
+    # Owner & Logger
+    OWNER_ID = int(getenv("OWNER_ID", 0))
+    LOGGER_ID = int(getenv("LOGGER_ID", 0))
 
-# ========================
-# String Sessions
-# ========================
-STRING1 = getenv("STRING_SESSION", None)
-STRING2 = getenv("STRING_SESSION2", None)
-STRING3 = getenv("STRING_SESSION3", None)
-STRING4 = getenv("STRING_SESSION4", None)
-STRING5 = getenv("STRING_SESSION5", None)
+    # MongoDB
+    MONGO_DB_URI = getenv("MONGO_DB_URI", None)
 
-# ========================
-# Duration Limits
-# ========================
-DURATION_LIMIT_MIN = int(getenv("DURATION_LIMIT", 60))
+    # String Sessions
+    STRING1 = getenv("STRING_SESSION", None)
+    STRING2 = getenv("STRING_SESSION2", None)
+    STRING3 = getenv("STRING_SESSION3", None)
+    STRING4 = getenv("STRING_SESSION4", None)
+    STRING5 = getenv("STRING_SESSION5", None)
 
-# ========================
-# Heroku
-# ========================
-HEROKU_APP_NAME = getenv("HEROKU_APP_NAME", None)
-HEROKU_API_KEY = getenv("HEROKU_API_KEY", None)
+    # Duration Limits
+    DURATION_LIMIT_MIN = int(getenv("DURATION_LIMIT", 60))
 
-# ========================
-# Upstream Repo
-# ========================
-UPSTREAM_REPO = getenv(
-    "UPSTREAM_REPO",
-    "https://github.com/hankarivirk/JattX-Music"
-)
-UPSTREAM_BRANCH = getenv("UPSTREAM_BRANCH", "master")
+    # Upstream Repo
+    UPSTREAM_REPO = getenv(
+        "UPSTREAM_REPO",
+        "https://github.com/hankarivirk/JattX-Music"
+    )
+    UPSTREAM_BRANCH = getenv("UPSTREAM_BRANCH", "master")
 
-# ========================
-# Support & Channels
-# ========================
-SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/JattXMusic")
-SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/JattXSupport")
+    # Support & Channels
+    SUPPORT_CHANNEL = getenv(
+        "SUPPORT_CHANNEL",
+        "https://t.me/JattXMusic"
+    )
+    SUPPORT_CHAT = getenv(
+        "SUPPORT_CHAT",
+        "https://t.me/JattXSupport"
+    )
 
-# ========================
-# Image URLs
-# ========================
-START_IMAGE_URL = getenv(
-    "START_IMAGE_URL",
-    "https://te.legra.ph/file/your-image.jpg"
-)
+    # Image URLs
+    START_IMAGE_URL = getenv(
+        "START_IMAGE_URL",
+        "https://te.legra.ph/file/your-image.jpg"
+    )
 
-# ========================
-# Auto-Leaving Assistant
-# ========================
-AUTO_LEAVING_ASSISTANT = bool(getenv("AUTO_LEAVING_ASSISTANT", True))
+    # Auto-Leaving Assistant
+    AUTO_LEAVING_ASSISTANT = bool(
+        getenv("AUTO_LEAVING_ASSISTANT", True)
+    )
 
-# ========================
-# Spotify (Optional)
-# ========================
-SPOTIFY_CLIENT_ID = getenv("SPOTIFY_CLIENT_ID", None)
-SPOTIFY_CLIENT_SECRET = getenv("SPOTIFY_CLIENT_SECRET", None)
+    # Spotify Optional
+    SPOTIFY_CLIENT_ID = getenv("SPOTIFY_CLIENT_ID", None)
+    SPOTIFY_CLIENT_SECRET = getenv("SPOTIFY_CLIENT_SECRET", None)
 
-# ========================
-# Validation
-# ========================
-if not API_ID:
-    raise ValueError("API_ID is missing in environment variables.")
-if not API_HASH:
-    raise ValueError("API_HASH is missing in environment variables.")
-if not BOT_TOKEN:
-    raise ValueError("BOT_TOKEN is missing in environment variables.")
-if not MONGO_DB_URI:
-    raise ValueError("MONGO_DB_URI is missing in environment variables.")
-if not OWNER_ID:
-    raise ValueError("OWNER_ID is missing in environment variables.")
+    # Heroku
+    HEROKU_APP_NAME = getenv("HEROKU_APP_NAME", None)
+    HEROKU_API_KEY = getenv("HEROKU_API_KEY", None)
